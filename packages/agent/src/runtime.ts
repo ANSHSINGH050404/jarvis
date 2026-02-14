@@ -30,7 +30,12 @@ import {
 } from "./prompt/builder.js";
 import { ToolRegistry, type ToolContext } from "@jarvis/tools";
 import { MemoryStore, type PersistedMessage } from "@jarvis/memory";
-import { SkillRegistry, CodingSkill, ResearchSkill } from "@jarvis/skills";
+import {
+  SkillRegistry,
+  CodingSkill,
+  ResearchSkill,
+  ComputerControlSkill, // Week 6
+} from "@jarvis/skills";
 
 const logger = createLogger("AgentRuntime");
 
@@ -93,6 +98,7 @@ export class AgentRuntime {
   private registerSkills() {
     this.skillRegistry.register(CodingSkill);
     this.skillRegistry.register(ResearchSkill);
+    this.skillRegistry.register(ComputerControlSkill);
 
     // Register tools from skills
     const tools = this.skillRegistry.getAllTools();
@@ -275,8 +281,8 @@ export class AgentRuntime {
       const userMessage = this.promptBuilder.formatUserMessage(content);
       await this.appendToConversation(sessionId, userId, userMessage);
 
-      // Reload conversation to ensure sync (optional but safe)
-      conversation = await this.loadConversation(sessionId);
+      // Add to local conversation array (don't reload from store to avoid race conditions)
+      conversation.push(userMessage);
 
       // Build context
       const context: PromptContext = {
@@ -288,10 +294,18 @@ export class AgentRuntime {
 
       // Inject memory context for RAG
       if (this.memoryStore) {
-        const memoryContext = await this.retrieveContext(content);
-        if (memoryContext) {
-          context.memories = memoryContext;
-          logger.info("Injected relevant memories into context", { sessionId });
+        try {
+          const memoryContext = await this.retrieveContext(content);
+          if (memoryContext) {
+            context.memories = memoryContext;
+            logger.info("Injected relevant memories into context", {
+              sessionId,
+            });
+          }
+        } catch (error) {
+          logger.warn("Failed to retrieve memory context (skipping RAG)", {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
 

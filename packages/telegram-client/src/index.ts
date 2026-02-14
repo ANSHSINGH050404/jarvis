@@ -7,6 +7,12 @@ dotenv.config(); // Load environment variables
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const GATEWAY_URL = process.env.GATEWAY_URL || "ws://localhost:3000/ws";
 
+console.log("🚀 Starting Jarvis Telegram Client...");
+console.log(`📡 Gateway URL: ${GATEWAY_URL}`);
+console.log(
+  `🤖 Bot Token: ${BOT_TOKEN ? BOT_TOKEN.substring(0, 10) + "..." : "MISSING"}`,
+);
+
 if (!BOT_TOKEN) {
   console.error("❌ TELEGRAM_BOT_TOKEN is missing in .env");
   process.exit(1);
@@ -14,8 +20,7 @@ if (!BOT_TOKEN) {
 
 const bot = new Telegraf(BOT_TOKEN);
 const sessions = new Map<number, WebSocket>();
-
-console.log("🚀 Starting Jarvis Telegram Client...");
+const messageBuffers = new Map<number, string>(); // Buffer for streaming responses
 
 // Helper to get or create a WebSocket connection for a chat session
 function getSession(chatId: number): WebSocket {
@@ -36,13 +41,30 @@ function getSession(chatId: number): WebSocket {
     ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
+        console.log(
+          `[DEBUG] Received chunk type: ${message.type}, content length: ${message.content?.length}`,
+        );
 
         if (message.type === "text") {
-          // Provide typing indicator before sending long texts?
-          // bot.telegram.sendChatAction(chatId, 'typing');
-          bot.telegram.sendMessage(chatId, message.content);
+          // Buffer text chunks
+          const current = messageBuffers.get(chatId) || "";
+          messageBuffers.set(chatId, current + message.content);
+          // Keep typing indicator active
+          bot.telegram.sendChatAction(chatId, "typing").catch(() => {});
+        } else if (message.type === "done") {
+          // Send operational buffer
+          const finalMessage = messageBuffers.get(chatId);
+          if (finalMessage) {
+            bot.telegram
+              .sendMessage(chatId, finalMessage, { parse_mode: "Markdown" })
+              .catch(() => bot.telegram.sendMessage(chatId, finalMessage)); // Fallback if markdown fails
+            messageBuffers.set(chatId, ""); // Clear buffer
+          }
         } else if (message.type === "error") {
+          const finalMessage = messageBuffers.get(chatId);
+          if (finalMessage) bot.telegram.sendMessage(chatId, finalMessage); // Send whatever we have
           bot.telegram.sendMessage(chatId, `❌ Error: ${message.content}`);
+          messageBuffers.set(chatId, "");
         }
       } catch (err) {
         console.error("Error parsing message from Jarvis:", err);

@@ -21,6 +21,7 @@
         "@google/generative-ai": "^0.21.0",
         "@jarvis/core": "workspace:*",
         "@jarvis/memory": "workspace:*",
+        "@jarvis/skills": "workspace:*",
         "@jarvis/tools": "workspace:*",
       },
       "devDependencies": {
@@ -62,6 +63,17 @@
         "typescript": "^5.3.3",
       },
     },
+    "packages/skills": {
+      "name": "@jarvis/skills",
+      "version": "0.1.0",
+      "dependencies": {
+        "@jarvis/core": "workspace:*",
+        "@jarvis/tools": "workspace:*",
+      },
+      "devDependencies": {
+        "typescript": "^5.3.3",
+      },
+    },
     "packages/telegram-client": {
       "name": "@jarvis/telegram-client",
       "version": "0.1.0",
@@ -99,6 +111,8 @@
     "@jarvis/gateway": ["@jarvis/gateway@workspace:packages/gateway"],
 
     "@jarvis/memory": ["@jarvis/memory@workspace:packages/memory"],
+
+    "@jarvis/skills": ["@jarvis/skills@workspace:packages/skills"],
 
     "@jarvis/telegram-client": ["@jarvis/telegram-client@workspace:packages/telegram-client"],
 

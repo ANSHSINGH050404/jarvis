@@ -10,6 +10,7 @@
     "@jarvis/core": "workspace:*",
     "@jarvis/tools": "workspace:*",
     "@jarvis/memory": "workspace:*",
+    "@jarvis/skills": "workspace:*",
     "@google/generative-ai": "^0.21.0"
   },
   "devDependencies": {

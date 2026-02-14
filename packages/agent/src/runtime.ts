@@ -30,6 +30,7 @@ import {
 } from "./prompt/builder.js";
 import { ToolRegistry, type ToolContext } from "@jarvis/tools";
 import { MemoryStore, type PersistedMessage } from "@jarvis/memory";
+import { SkillRegistry, CodingSkill, ResearchSkill } from "@jarvis/skills";
 
 const logger = createLogger("AgentRuntime");
 
@@ -48,6 +49,7 @@ export class AgentRuntime {
   private llm: GeminiProvider;
   private promptBuilder: PromptBuilder;
   private toolRegistry: ToolRegistry;
+  private skillRegistry: SkillRegistry;
   private memoryStore?: MemoryStore;
   private config: AgentConfig;
 
@@ -64,6 +66,12 @@ export class AgentRuntime {
     this.promptBuilder = new PromptBuilder();
     this.toolRegistry = toolRegistry || new ToolRegistry();
     this.memoryStore = memoryStore;
+    this.skillRegistry = new SkillRegistry();
+
+    // Register skills (Week 6)
+    if (this.config.enableTools) {
+      this.registerSkills();
+    }
 
     // Register internal tools (memory)
     if (this.config.enableTools && this.memoryStore) {
@@ -76,6 +84,23 @@ export class AgentRuntime {
       toolsEnabled: config.enableTools ?? false,
       toolCount: this.toolRegistry.getToolNames().length,
       persistence: !!this.memoryStore,
+    });
+  }
+
+  /**
+   * Register default skills
+   */
+  private registerSkills() {
+    this.skillRegistry.register(CodingSkill);
+    this.skillRegistry.register(ResearchSkill);
+
+    // Register tools from skills
+    const tools = this.skillRegistry.getAllTools();
+    this.toolRegistry.registerMany(tools);
+
+    logger.info("Registered skills", {
+      skills: this.skillRegistry.getAll().map((s) => s.name),
+      toolCount: tools.length,
     });
   }
 
@@ -258,6 +283,7 @@ export class AgentRuntime {
         userId,
         sessionId,
         currentTime: new Date(),
+        skillInstructions: this.skillRegistry.getSystemInstructions(),
       };
 
       // Inject memory context for RAG

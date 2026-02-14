@@ -1,0 +1,16 @@
+{
+  "name": "@jarvis/skills",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jarvis/core": "workspace:*",
+    "@jarvis/tools": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

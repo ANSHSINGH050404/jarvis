@@ -32,6 +32,7 @@ export interface PromptContext {
   currentTime?: Date;
   availableTools?: string[]; // For Week 3
   memories?: string; // For Week 5
+  skillInstructions?: string; // For Week 6
 }
 
 export class PromptBuilder {
@@ -119,6 +120,10 @@ Future: Tool execution, file operations, web automation`;
 
     if (context.memories) {
       parts.push("\nRelevant Memories/Facts:\n" + context.memories);
+    }
+
+    if (context.skillInstructions) {
+      parts.push(context.skillInstructions);
     }
 
     return parts.join("\n\n");
